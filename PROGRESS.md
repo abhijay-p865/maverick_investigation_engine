@@ -1,0 +1,219 @@
+# Project Progress Log
+
+## 2026-10-24 — Chunk 1 started
+
+Completed:
+
+- Read the full `PRD.md` and inspected the repository.
+- Confirmed the repository initially contained the PRD and the IndPenSim MATLAB/Octave source, with no generated CSV files.
+- Confirmed normal `python`, GNU Octave, and MATLAB commands were unavailable.
+- Located Codex's bundled Python 3.12 runtime and created `.venv`.
+- Installed NumPy, pandas, scikit-learn, SciPy, matplotlib, joblib, PyArrow, PyYAML, and pytest.
+- Added the modular package structure, project rules, plan, README, dependency metadata, and Git exclusions.
+
+Decisions:
+
+- Use the small verified public IndPenSim 100-batch measurement files for the pilot because no simulator runtime is installed and the simulator repository contains no generated CSVs.
+- Keep all ground-truth fields outside feature engineering.
+- Use complete-batch, control-regime-stratified healthy splits.
+
+Tests/results:
+
+- Pending after the first package modules are added.
+
+Blockers:
+
+- None. Octave is not needed for this pilot because genuine published simulator output is available.
+
+Next:
+
+- Implement and test the IndPenSim loader and validation layer.
+
+## 2026-10-24 — Chunks 2 and 3 completed
+
+Completed:
+
+- Downloaded and hash-verified the public 100-batch IndPenSim parquet compilation.
+- Implemented a source adapter, stable internal names/units, exact fault-interval preservation, conservative short-gap interpolation, and clear validation failures.
+- Documented the source-quality issue in the compilation's misleading `Batch ID` and `Fault flag` columns. Reconstructed batch IDs from the 100 time resets and checked them against the 100 statistics records.
+- Implemented 72-minute causal rolling windows with mean, standard deviation, slope, and first-to-last change for dissolved oxygen, pH, temperature, and pressure.
+- Added control-strategy-specific phase normalization using only healthy training data.
+- Created a complete-batch 54/18/18 healthy train/validation/test split plus 10 fault development-holdout batches (seed 42).
+- Trained `isolation_forest_v1` on healthy training batches and set its threshold to the 99th percentile of healthy validation scores.
+- Saved the model, readable feature/model metadata, split manifest, timeline CSVs, JSON reports, and PNG charts.
+- Verified the standalone CSV command by exporting source batch 91 to CSV, analyzing it, and confirming all 1,285 timeline rows exactly matched direct parquet analysis.
+
+Commands executed successfully:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\acquire_indpensim.py
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m maverickx.cli pilot
+.\.venv\Scripts\python.exe -m maverickx.cli analyze data\processed\Batch_91_fault_3.csv --output-dir outputs\csv_smoke_test
+```
+
+Verified results:
+
+- Dataset: 113,935 rows; 100 batches; 90 healthy and 10 fault batches; 12-minute nominal sampling.
+- Automated tests: 14 passed in 8.53 seconds on the final v1 code.
+- Healthy test false-alert window fraction: 0.946% across 18 batches.
+- Healthy false-alert events: 0.331 per batch-day.
+- At least one in-interval alert: 8 of 10 fault batches.
+- Known fault intervals with at least one alert: 13 of 21 (61.9%).
+- Window recall inside known fault intervals: 7.01%; precision: 16.45%; F2: 7.92%.
+- Fault-batch 91 CSV smoke test: 1,285 windows, 37 flags, 15 grouped events, maximum score 0.70735.
+
+Issues and interpretation:
+
+- The current detector misses both coolant-flow fault intervals and only flags parts of several other intervals. It is a working pipeline, not yet a strong detector.
+- Fault windows were inspected while debugging preprocessing, so these 10 batches are a development holdout, not an untouched final benchmark. Additional simulator runs are needed for unbiased final testing.
+- The first artifact uses only the four required sensors so minimum-input CSVs remain usable. Direct manipulated-variable channels could improve process-fault detection and should be compared as a separate extended model.
+- Events can still be fragmented; the grouping bridges one clear 12-minute window but does not perform aggressive smoothing.
+- These measurements contain simulated process faults, not microbial contamination.
+
+Next:
+
+- Before SHAP, expand the simulator dataset to create a fresh untouched test set and compare window sizes, a statistical baseline, One-Class SVM, and an optional extended-sensor Isolation Forest. After selecting a detector, add SHAP explanations and investigation prioritization.
+
+## 2026-10-25 — Model improvement and independent validation completed
+
+Completed:
+
+- Installed and verified portable GNU Octave 11.3.0, then smoke-tested the full IndPenSim-to-CSV path.
+- Locked a 48-batch campaign and development/test split before generation.
+- Generated 16 fresh healthy batches and 32 fresh fault batches (four for each code 1–8) from IndPenSim commit `45c3d8c53ba423671acfb63de5855ecd4c8aa9d4`.
+- Validated 55,155 rows, 0.2-hour sampling, correct fault codes, zero missing required measurements, and saved SHA-256 hashes for all CSVs.
+- Compared Isolation Forest, One-Class SVM, and a robust phase-adjusted statistical baseline across 3, 6, 12, and 18-sample windows, core versus extended sensors, and six healthy-validation thresholds.
+- Selected a three-sample core-sensor One-Class SVM under the predeclared maximum of 0.5 healthy false alert events per batch-day.
+- Saved the selection lock before opening the untouched test partition, then evaluated the selected model and v1 once on 6 healthy and 16 fault test batches.
+- Added interval-level diagnostics and headless timeline rendering. No SHAP or investigation-ranking component was started.
+
+Independent test results:
+
+- Selected model fault-event recall: 27/34 = 79.4%; v1: 25/34 = 73.5%.
+- Healthy false alert events per batch-day: 0.330; v1: 0.487.
+- Healthy false-alert window fraction: 0.828%; v1: 2.344%.
+- Median detected-event delay: 0.0 h for both; mean delay: 14.54 h selected versus 12.16 h v1.
+- On the 23 intervals detected by both, the selected model was 2.14 h faster on average.
+- Window precision/recall/F2: 88.66% / 13.86% / 16.67%; v1: 45.59% / 3.56% / 4.37%.
+- Coolant-flow recall: 2/2 selected versus 0/2 v1; selected delays were 9.8 h and 9.0 h.
+
+Issues and interpretation:
+
+- Seven of 34 test fault intervals remain missed: two late substrate-feed periods, two second base-flow periods, two related combined-fault periods, and one temperature-sensor batch.
+- Mean delay regressed because the selected model found additional but late events, especially coolant; common-event delay improved.
+- The extended sensor model reduced false alarms but had slightly lower development event recall, so it was not selected under the declared recall-first policy.
+- The max robust-z statistical baseline saturated at the normalizer clip and produced no useful alerts at the tested healthy thresholds. It remains a comparison baseline, not a candidate for deployment.
+- The model detects simulated process and sensor faults only. It is not validated for microbial contamination or real manufacturing data.
+
+Verification commands:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\generate_phase2_indpensim.py --octave "tools\octave-11.3.0-w64\octave-11.3.0-w64\mingw64\bin\octave-cli.exe" --workers 6
+.\.venv\Scripts\python.exe scripts\run_phase2_experiment.py
+.\.venv\Scripts\python.exe scripts\run_phase2_experiment.py --render-only
+.\.venv\Scripts\python.exe scripts\validate_phase2_dataset.py
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+Next:
+
+- The detector is ready for a research-stage SHAP/explanation and investigation-prioritization prototype, while retaining clear warnings that it is not production-ready and does not detect contamination.
+
+## 2026-10-25 — Time-boxed threshold improvement completed
+
+Completed:
+
+- Swept 11 nearby SVM thresholds using development batches only; the estimator, features, phase normalization, and rolling window were unchanged.
+- Selected the 98.45th healthy-score percentile because it achieved the best development fault-event recall under the existing 0.5 false-alert-event cap.
+- Preserved the original locked artifact and saved the operational update as `artifacts/phase2/selected_detector_v2_1.joblib`.
+- Ran an explicitly post-hoc confirmation on the already-viewed test set. These numbers do not replace the original independent benchmark.
+
+Measured results:
+
+- Development event recall: 85.5% to 90.9% (+3 of 55 intervals); false events: 0.336 to 0.461 per healthy batch-day.
+- Post-hoc test event recall: 79.4% to 85.3% (+2 of 34 intervals).
+- Post-hoc mean detection delay: 14.54 h to 7.14 h.
+- Both recovered events were second base-flow intervals, detected after 0.2 h and 0.4 h.
+- No previously detected test event was lost.
+- Post-hoc healthy false events increased to 0.470 per batch-day, still below the declared 0.5 cap.
+- Window precision decreased modestly from 88.66% to 86.13%, while window recall and F2 improved.
+
+Decision:
+
+- Use v2.1 for SHAP explanations and investigation reporting. Do not perform more detector optimization before the end-to-end prototype is complete.
+
+## 2026-10-25 — Phase 3 explanations and investigation reports completed
+
+Completed:
+
+- Added Kernel SHAP explanations for the exact negative `score_samples` quantity returned by the saved v2.1 One-Class SVM.
+- Used 20 representative healthy phase-normalized windows as the SHAP background and 100 coalition samples per explained window.
+- Aggregated feature contributions into event-level sensor evidence while preserving observed values, units, trends, and timestamps.
+- Added transparent rules covering the 12 PRD investigation areas. Rules combine positive SHAP support with optional actuator/process deviations from healthy phase references.
+- Stabilized low-variance process comparisons with documented engineering-scale floors; priority scores are explicitly not root-cause probabilities.
+- Added JSON, Markdown, window CSV, anomaly timeline PNG, and SHAP event PNG outputs for any supported batch CSV.
+- Added a predefined IndPenSim-to-investigation mapping before the final benchmark summary and evaluated combined faults separately.
+
+Measured results on the existing Phase 2 test set:
+
+- Detector result remained unchanged: 29/34 known fault intervals detected (85.3%).
+- Investigation Top-1 among detected intervals: 18/29 = 62.1%.
+- Investigation Top-3 among detected intervals: 28/29 = 96.6%.
+- End-to-end Top-3, counting detector misses as misses: 28/34 = 82.4%.
+- Single-fault Top-3 among detected intervals: 20/21 = 95.2%.
+- Combined-fault Top-3 among detected intervals: 8/8 = 100%; reported separately.
+- SHAP additivity passed for every explained window in 17 evaluation reports; worst absolute reconstruction residual was 4.44e-16.
+- Maximum measured report-generation runtime in that run was 1.84 seconds per batch on this workspace with one representative window per event.
+- Healthy example `phase2_011` still produced 30 flagged windows grouped into 8 events, demonstrating the remaining false-alert burden.
+
+Issues and interpretation:
+
+- These ranking results are post-hoc because the Phase 2 test set had already been viewed during the threshold decision, and a numerical context-scaling defect was corrected after the first Phase 3 benchmark run.
+- The only detected interval whose acceptable area was absent from the Top 3 was the early pressure interval in `phase2_034`; downstream DO, thermal, and dosing evidence outranked pressure review.
+- Five intervals were not ranked because the frozen detector did not flag them: two late substrate-feed intervals, two combined base-flow intervals, and one temperature-sensor batch.
+- Coolant review was Top-3 but not Top-1 for the two coolant cases because temperature-probe review received stronger model evidence; this is useful uncertainty rather than proof that the probe was responsible.
+- Healthy data can still produce investigation leads. The report states that these are review priorities, not diagnoses.
+- No microbial contamination records, operator logs, or real manufacturing data were evaluated.
+
+Verification commands:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe scripts\evaluate_phase3.py --force
+.\.venv\Scripts\python.exe -m maverickx.cli investigate "data\raw\phase2_indpensim\csv\Batch_40_fault_8.csv" --output-dir "outputs\phase3\demo"
+```
+
+Next:
+
+- Freeze this end-to-end prototype for the demonstration. If time permits, improve report presentation and add real process-log inputs; do not claim contamination-source identification.
+
+## 2026-10-25 — Interactive website and teammate handoff completed
+
+Completed:
+
+- Added a FastAPI website that accepts a CSV upload and runs the existing v2.1 detection, Kernel SHAP, investigation ranking, and report-generation pipeline.
+- Added a responsive MaverickX-inspired visual system based on the public site's monochrome industrial design, bold typography, square controls, and minimal accent color.
+- Added result summary cards, ranked investigation evidence, event-level SHAP details, sensor trends, timeline/SHAP chart switching, and JSON/Markdown/CSV downloads.
+- Added 25 MB upload limits, extension validation, clear validation errors, safe result-file routing, and path-traversal protection.
+- Packaged only the runtime assets needed by a fresh clone: the frozen v2.1 model, ten healthy reference batches, and one demonstration CSV.
+- Added `IMPROVEMENT_ROADMAP.md`, written for a teammate with similar scientific and programming experience.
+- Added a GitHub Actions workflow for automated tests.
+
+Verified:
+
+- The website health endpoint reported the v2.1 model and healthy background ready.
+- A real `Batch_40_fault_8.csv` upload completed through the HTTP API and returned pH probe as the first investigation priority.
+- The returned JSON report was downloadable through the protected results route.
+- Automated tests: 28 passed. Remaining warnings are third-party SHAP/Matplotlib and FastAPI TestClient deprecation notices.
+
+Issues:
+
+- The website is a local demonstration server. It does not yet include authentication, durable job storage, a background queue, or production deployment.
+- Uploaded files and reports remain on local disk until manually removed.
+- The GitHub repository still needs to be connected, committed, pushed, and confirmed public.
+
+Next:
+
+- Push the tested source and small runtime assets to the public GitHub repository, then hand off using `IMPROVEMENT_ROADMAP.md`.
+

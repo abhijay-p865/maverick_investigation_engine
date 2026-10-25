@@ -1,0 +1,10 @@
+model_version: maverickx_phase2_threshold_v2_1
+base_artifact: artifacts/phase2/selected_detector.joblib
+new_artifact: artifacts/phase2/selected_detector_v2_1.joblib
+change: threshold_only
+threshold_source: fresh_healthy_development_scores
+threshold_quantile: 0.9845
+threshold: -0.14952754459042394
+false_alert_event_cap_per_batch_day: 0.5
+selection_data: development_only
+test_comparison_status: post_hoc_confirmation_because_test_results_were_already_viewed

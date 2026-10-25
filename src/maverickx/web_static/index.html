@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="MaverickX post-batch bioreactor investigation prototype">
+  <title>MaverickX — Post-Batch Investigation</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="MaverickX Investigation Engine home">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span>MAVERICK X</span>
+    </a>
+    <div class="header-meta"><span class="status-dot"></span> RESEARCH PROTOTYPE · V2.1</div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="eyebrow light">POST-BATCH INVESTIGATION ENGINE</div>
+      <h1>Turn batch data into an investigation plan.</h1>
+      <p>Upload a completed fermentation CSV. MaverickX finds unusual periods, explains the model evidence, and ranks the systems worth checking first.</p>
+      <a class="text-link light" href="#analyze">Analyze a batch <span>→</span></a>
+    </section>
+
+    <section class="intro section-shell">
+      <p class="section-number">01 / ANALYZE</p>
+      <div>
+        <h2>Evidence first.<br>Conclusions second.</h2>
+        <p class="lede">The engine uses the frozen v2.1 One-Class SVM and Kernel SHAP. It identifies unusual process behavior—it does not diagnose contamination or prove root cause.</p>
+      </div>
+    </section>
+
+    <section id="analyze" class="analyze-section section-shell">
+      <div class="upload-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">BATCH INPUT</p>
+            <h3>Upload an IndPenSim-format CSV</h3>
+          </div>
+          <span class="file-limit">MAX 25 MB</span>
+        </div>
+
+        <label class="drop-zone" id="drop-zone" for="file-input">
+          <input id="file-input" type="file" accept=".csv,text/csv" hidden>
+          <span class="upload-icon" aria-hidden="true">↑</span>
+          <span class="drop-title" id="drop-title">Drop a CSV here</span>
+          <span class="drop-subtitle">or click to choose a completed batch</span>
+          <span class="selected-file" id="selected-file" aria-live="polite"></span>
+        </label>
+
+        <div class="requirements">
+          <span>Required channels</span>
+          <ul>
+            <li>Dissolved oxygen</li><li>pH</li><li>Temperature</li><li>Pressure</li>
+          </ul>
+        </div>
+        <button class="primary-button" id="analyze-button" disabled>
+          <span>Run investigation</span><b aria-hidden="true">→</b>
+        </button>
+        <p class="local-note">Analysis runs on this Python server. Uploaded data and generated reports are saved locally under <code>outputs/web</code>.</p>
+      </div>
+
+      <aside class="process-panel">
+        <p class="eyebrow">WHAT HAPPENS NEXT</p>
+        <ol class="process-list">
+          <li><span>01</span><div><strong>Validate</strong><p>Check timestamps, required measurements, and missing data.</p></div></li>
+          <li><span>02</span><div><strong>Detect</strong><p>Score rolling sensor patterns with the saved v2.1 model.</p></div></li>
+          <li><span>03</span><div><strong>Explain</strong><p>Use Kernel SHAP to identify what raised each anomaly score.</p></div></li>
+          <li><span>04</span><div><strong>Prioritize</strong><p>Rank transparent equipment, sensor, and process checks.</p></div></li>
+        </ol>
+      </aside>
+    </section>
+
+    <section class="analysis-state section-shell hidden" id="loading" aria-live="polite">
+      <div class="loader-ring" aria-hidden="true"></div>
+      <div><p class="eyebrow">ANALYSIS IN PROGRESS</p><h2>Reading the batch history…</h2><p>This usually takes several seconds. SHAP is explaining the actual saved model—not a substitute classifier.</p></div>
+    </section>
+
+    <section class="error-panel section-shell hidden" id="error" role="alert">
+      <p class="eyebrow">ANALYSIS COULD NOT COMPLETE</p>
+      <h2>Check the CSV and try again.</h2>
+      <p id="error-message"></p>
+    </section>
+
+    <section class="results hidden" id="results" aria-live="polite">
+      <div class="results-hero section-shell">
+        <div>
+          <p class="eyebrow light">INVESTIGATION REPORT</p>
+          <h2 id="result-batch">Batch report</h2>
+          <p id="result-summary"></p>
+        </div>
+        <div class="download-actions" id="downloads"></div>
+      </div>
+
+      <div class="metrics section-shell" id="metrics"></div>
+
+      <div class="section-shell content-grid">
+        <section>
+          <p class="section-number">02 / PRIORITIZE</p>
+          <h2>Where to investigate first</h2>
+          <p class="lede compact">Relative evidence rankings—not probabilities of root cause.</p>
+          <div class="priority-list" id="priority-list"></div>
+        </section>
+        <aside class="evidence-key">
+          <p class="eyebrow">HOW TO READ THIS</p>
+          <p><strong>Confirmed observation</strong> means something measured in the uploaded batch or model explanation.</p>
+          <p><strong>Possible explanation</strong> is a hypothesis worth checking, not a diagnosis.</p>
+          <p><strong>Priority score</strong> combines SHAP and process-pattern support. It is not a probability.</p>
+        </aside>
+      </div>
+
+      <section class="chart-section section-shell">
+        <div class="section-heading">
+          <div><p class="section-number">03 / REVIEW</p><h2>Batch evidence</h2></div>
+          <div class="chart-tabs" role="tablist">
+            <button class="chart-tab active" data-chart="timeline" role="tab">Timeline</button>
+            <button class="chart-tab" data-chart="shap" role="tab">SHAP evidence</button>
+          </div>
+        </div>
+        <div class="chart-frame"><img id="chart-image" alt="Generated batch analysis chart"></div>
+      </section>
+
+      <section class="events-section section-shell">
+        <p class="section-number">04 / EVENTS</p>
+        <h2>Detected abnormal periods</h2>
+        <div id="events-list" class="events-list"></div>
+      </section>
+
+      <section class="limitations section-shell">
+        <div><p class="eyebrow light">SCIENTIFIC LIMITS</p><h2>This is an investigation aid,<br>not a contamination diagnosis.</h2></div>
+        <ul id="limitations-list"></ul>
+      </section>
+    </section>
+  </main>
+
+  <footer>
+    <span>MAVERICK X · POST-BATCH INVESTIGATION</span>
+    <span>SIMULATION-VALIDATED RESEARCH PROTOTYPE</span>
+  </footer>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

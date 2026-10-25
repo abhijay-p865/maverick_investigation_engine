@@ -1,0 +1,21 @@
+{
+  "created_before_phase3_test_evaluation": true,
+  "purpose": "Predefined mapping from simulated IndPenSim fault labels to acceptable investigation categories",
+  "single_fault_categories": {
+    "aeration_fault": ["aeration_oxygen_delivery"],
+    "pressure_fault": ["pressure_regulation"],
+    "substrate_feed_fault": ["substrate_feed_system"],
+    "base_flow_fault": ["acid_base_ph_control"],
+    "coolant_flow_fault": ["cooling_heating_system"],
+    "temperature_sensor_fault": ["temperature_probe"],
+    "ph_sensor_fault": ["ph_probe"]
+  },
+  "combined_process_faults_by_interval": {
+    "20.0-30.0": ["aeration_oxygen_delivery", "substrate_feed_system"],
+    "70.0-92.0": ["cooling_heating_system", "substrate_feed_system"],
+    "100.0-110.0": ["aeration_oxygen_delivery", "pressure_regulation"],
+    "140.0-160.0": ["acid_base_ph_control"],
+    "200.0-270.0": ["pressure_regulation", "substrate_feed_system", "cooling_heating_system"]
+  },
+  "note": "A hit means at least one acceptable area appears in the requested rank cutoff. Combined-fault results are reported separately."
+}

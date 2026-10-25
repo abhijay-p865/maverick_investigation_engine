@@ -1,0 +1,27 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Downloaded/generated data and model artifacts are reproducible and can be large.
+data/raw/
+data/processed/
+data/simulator_workspace/
+artifacts/
+outputs/
+
+# Keep the separately sourced simulator checkout out of the parent repository.
+IndPenSim/
+
+*.egg-info/
+dist/
+build/
+.idea/
+.vscode/
+
+# Local simulator runtime (downloaded by the phase-2 setup; not project source).
+tools/octave-*/
+tools/octave-*.zip
+

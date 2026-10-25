@@ -1,0 +1,32 @@
+model_version: isolation_forest_v1
+algorithm: IsolationForest
+random_seed: 42
+n_estimators: 300
+contamination: auto
+threshold:
+  source: healthy_validation_scores
+  quantile: 0.99
+score:
+  definition: negative_sklearn_score_samples
+  interpretation: larger_is_more_anomalous
+feature_window:
+  samples: 6
+  expected_sampling_interval_h: 0.2
+  approximate_window_h: 1.2
+  causal: true
+sensors:
+  - dissolved_oxygen_mg_l
+  - ph
+  - temperature_k
+  - pressure_bar
+statistics_per_sensor:
+  - mean
+  - standard_deviation
+  - slope_per_hour
+  - first_to_last_change
+phase_normalization:
+  bin_width_h: 0.2
+  grouped_by_control_strategy: true
+  fault_campaign_reference: recipe_driven
+ground_truth_used_as_feature: false
+

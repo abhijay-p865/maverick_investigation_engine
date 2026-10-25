@@ -1,0 +1,41 @@
+experiment: phase2_model_comparison
+random_seed: 42
+training_data:
+  source: published_indpensim_100_batch_compilation
+  healthy_batches: 90
+development_data:
+  fresh_healthy_batch_numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  fresh_fault_batch_numbers: [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+  additional_published_fault_batches: 10
+untouched_test_data:
+  healthy_batch_numbers: [11, 12, 13, 14, 15, 16]
+  fault_batch_numbers: [33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48]
+candidate_algorithms:
+  - isolation_forest
+  - one_class_svm
+  - robust_z_score
+window_samples: [3, 6, 12, 18]
+sampling_interval_hours: 0.2
+sensor_sets:
+  core:
+    - dissolved_oxygen_mg_l
+    - ph
+    - temperature_k
+    - pressure_bar
+  extended:
+    - dissolved_oxygen_mg_l
+    - ph
+    - temperature_k
+    - pressure_bar
+    - aeration_lph
+    - substrate_feed_lph
+    - base_flow_lph
+    - coolant_flow_lph
+threshold_quantiles: [0.99, 0.9925, 0.995, 0.9975, 0.999, 0.9995]
+selection_policy:
+  maximum_healthy_false_alert_events_per_batch_day: 0.5
+  ranking_order:
+    - maximize_fault_event_recall
+    - minimize_false_alert_events
+    - minimize_median_detection_delay
+    - maximize_window_f2

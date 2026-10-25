@@ -1,0 +1,22 @@
+{
+  "purpose": "Fresh IndPenSim campaign for phase-2 model selection and independent evaluation",
+  "campaign": {
+    "batch_count": 48,
+    "fault_codes_by_batch": [
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8,
+      1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8
+    ]
+  },
+  "development": {
+    "healthy_batches": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "fault_batches": [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]
+  },
+  "untouched_test": {
+    "healthy_batches": [11, 12, 13, 14, 15, 16],
+    "fault_batches": [33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48],
+    "use_policy": "Do not load, summarize, visualize, or score these batches until the selected model and threshold are locked."
+  },
+  "randomness": "Each batch runs in an independent Octave process. Upstream IndPenSim draws a random seed offset and then combines it with Batch_ref; exact generated CSV hashes are recorded because a clean rerun may differ.",
+  "created_before_generation": true
+}
