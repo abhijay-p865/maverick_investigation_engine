@@ -7,7 +7,7 @@ name = "maverickx"
 version = "0.1.0"
 description = "Post-batch anomaly detection for historical fermentation sensor data"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
   "fastapi==0.162.0",
   "joblib==1.6.0",
