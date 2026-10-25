@@ -24,6 +24,23 @@ WORK_ROOT = ROOT / "data" / "simulator_workspace"
 OUTPUT_ROOT = ROOT / "data" / "raw"
 
 
+def parse_fault_codes(value: str) -> list[int]:
+    """Parse a comma-separated campaign such as ``0,3,5,7,8``."""
+
+    try:
+        codes = [int(item.strip()) for item in value.split(",") if item.strip()]
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("fault codes must be comma-separated integers") from exc
+    if not codes:
+        raise argparse.ArgumentTypeError("at least one fault code is required")
+    invalid = [code for code in codes if code < 0 or code > 8]
+    if invalid:
+        raise argparse.ArgumentTypeError(
+            f"fault codes must be between 0 and 8; received {invalid}"
+        )
+    return codes
+
+
 def octave_literal(path: Path) -> str:
     """Return a path safe inside a single-quoted Octave expression."""
 
@@ -83,6 +100,20 @@ def main() -> int:
     parser.add_argument("--octave", type=Path, required=True, help="Path to octave-cli.exe")
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument(
+        "--fault-codes",
+        type=parse_fault_codes,
+        help="Optional comma-separated campaign, for example 0,3,5,7,8.",
+    )
+    parser.add_argument(
+        "--campaign-name",
+        help="Workspace name for a custom campaign; required with --fault-codes.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        help="Optional CSV destination. Defaults to data/raw/<campaign>/csv.",
+    )
+    parser.add_argument(
         "--smoke",
         action="store_true",
         help="Generate one healthy batch in a separate smoke-test directory.",
@@ -92,11 +123,22 @@ def main() -> int:
         parser.error(f"Octave executable not found: {args.octave}")
     if args.workers < 1:
         parser.error("--workers must be at least 1")
+    if args.smoke and args.fault_codes:
+        parser.error("--smoke and --fault-codes cannot be used together")
+    if args.fault_codes and not args.campaign_name:
+        parser.error("--campaign-name is required with --fault-codes")
 
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-    fault_codes = [0] if args.smoke else manifest["campaign"]["fault_codes_by_batch"]
-    name = "phase2_smoke" if args.smoke else "phase2_indpensim"
-    output_dir = OUTPUT_ROOT / name / "csv"
+    if args.smoke:
+        fault_codes = [0]
+        name = "phase2_smoke"
+    elif args.fault_codes:
+        fault_codes = args.fault_codes
+        name = args.campaign_name
+    else:
+        fault_codes = manifest["campaign"]["fault_codes_by_batch"]
+        name = "phase2_indpensim"
+    output_dir = args.output_dir.resolve() if args.output_dir else OUTPUT_ROOT / name / "csv"
     if output_dir.exists() and any(output_dir.glob("Batch_*.csv")):
         raise FileExistsError(
             f"Output already contains batch CSVs: {output_dir}. Existing generated "

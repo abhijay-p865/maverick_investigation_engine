@@ -273,3 +273,25 @@ Next:
 - Give the public URL to the product-website teammate and link to it as the interactive investigation demonstration.
 - Keep the current detector and scientific limitations unchanged unless a future validation phase supplies new evidence.
 
+## 2026-10-25 — Fresh downloadable IndPenSim test pack
+
+Completed:
+
+- Extended `scripts/generate_phase2_indpensim.py` with optional custom fault-code, campaign-name, and output-directory arguments while preserving the locked Phase 2 defaults.
+- Generated five new batches directly with GNU Octave: one healthy batch plus aeration, coolant-flow, temperature-sensor, and pH-sensor fault batches.
+- Saved the CSVs to `C:\Users\abhij\Downloads\MaverickX_fresh_IndPenSim_2026-10-25` for easy upload to the public website.
+
+Verified:
+
+- The simulator completed all five independent batches successfully.
+- The project loader accepted all five CSVs: 1,130–1,195 rows each, 0.2-hour median sampling, no duplicate timestamps, and no missing required measurements after loading.
+- SHA-256 hashes were calculated for all five files so their exact contents can be distinguished from earlier campaigns.
+
+Issues:
+
+- These are fresh simulated process and sensor-fault batches, not real manufacturing or microbial-contamination data.
+
+Next:
+
+- Upload any CSV from the Downloads test-pack folder to the public investigation tool and compare the healthy and faulty reports.
+
