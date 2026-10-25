@@ -217,3 +217,28 @@ Next:
 
 - Push the tested source and small runtime assets to the public GitHub repository, then hand off using `IMPROVEMENT_ROADMAP.md`.
 
+## 2026-10-25 — Public browser deployment prepared
+
+Completed:
+
+- Added a Vercel-compatible FastAPI entrypoint and deployment configuration for the existing v2.1 model pipeline.
+- Added a one-click example analysis so visitors can evaluate the complete workflow without downloading a CSV or using the command line.
+- Embedded generated reports and charts in the analysis response so browser downloads work reliably on stateless hosting.
+- Limited public uploads to 4 MB, which covers the current IndPenSim batches while staying below the hosting platform's request limit.
+- Pinned the model's runtime dependency versions and removed the web deployment's unnecessary PyArrow dependency.
+
+Verified:
+
+- Full automated suite: 31 tests passed.
+- A real example analysis returned a 1.6 MB response, below the host's 4.5 MB response limit.
+- Hosted-mode simulation used temporary storage and removed each job directory after producing the browser response.
+- Deployment configuration and the public FastAPI entrypoint imported successfully.
+
+Issues:
+
+- Production deployment is waiting for the project owner's one-time Vercel team-access approval.
+
+Next:
+
+- Connect the public GitHub repository to Vercel, deploy the production build, run a real example analysis at the public URL, and add that URL to the README.
+
