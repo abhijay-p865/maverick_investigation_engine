@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
+  "functions": {
+    "app.py": {
+      "maxDuration": 300,
+      "includeFiles": "{runtime_assets/**,src/maverickx/web_static/**}",
+      "excludeFiles": "{tests/**,docs/**,scripts/**,data/**,outputs/**,IndPenSim/**,tools/**}"
+    }
+  }
+}

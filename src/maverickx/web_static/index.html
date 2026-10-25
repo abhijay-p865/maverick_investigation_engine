@@ -40,7 +40,7 @@
             <p class="eyebrow">BATCH INPUT</p>
             <h3>Upload an IndPenSim-format CSV</h3>
           </div>
-          <span class="file-limit">MAX 25 MB</span>
+          <span class="file-limit">MAX 4 MB</span>
         </div>
 
         <label class="drop-zone" id="drop-zone" for="file-input">
@@ -57,10 +57,13 @@
             <li>Dissolved oxygen</li><li>pH</li><li>Temperature</li><li>Pressure</li>
           </ul>
         </div>
-        <button class="primary-button" id="analyze-button" disabled>
-          <span>Run investigation</span><b aria-hidden="true">→</b>
-        </button>
-        <p class="local-note">Analysis runs on this Python server. Uploaded data and generated reports are saved locally under <code>outputs/web</code>.</p>
+        <div class="analysis-actions">
+          <button class="primary-button" id="analyze-button" disabled>
+            <span>Run investigation</span><b aria-hidden="true">→</b>
+          </button>
+          <button class="secondary-button" id="demo-button" type="button">Try the example batch</button>
+        </div>
+        <p class="local-note">No account or software installation is required. The public prototype analyzes one CSV at a time and does not keep a durable batch history.</p>
       </div>
 
       <aside class="process-panel">

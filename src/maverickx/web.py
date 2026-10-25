@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import base64
 import logging
+import os
 import re
+import shutil
+import tempfile
 from functools import lru_cache
 from pathlib import Path
 from threading import Lock
@@ -25,8 +29,14 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 STATIC_DIR = Path(__file__).resolve().parent / "web_static"
 MODEL_PATH = PROJECT_ROOT / "runtime_assets/model/selected_detector_v2_1.joblib"
 BACKGROUND_DIR = PROJECT_ROOT / "runtime_assets/healthy_background"
-RESULTS_DIR = PROJECT_ROOT / "outputs/web"
-MAX_UPLOAD_BYTES = 25 * 1024 * 1024
+IS_HOSTED = bool(os.getenv("VERCEL"))
+RESULTS_DIR = (
+    Path(tempfile.gettempdir()) / "maverickx-results"
+    if IS_HOSTED
+    else PROJECT_ROOT / "outputs/web"
+)
+MAX_UPLOAD_BYTES = 4 * 1024 * 1024
+DEMO_BATCH_PATH = PROJECT_ROOT / "runtime_assets/demo/Batch_40_fault_8.csv"
 JOB_ID_PATTERN = re.compile(r"^[a-f0-9]{12}$")
 ANALYSIS_LOCK = Lock()
 
@@ -54,6 +64,22 @@ def _runtime_resources() -> tuple[CandidateDetector, list[Any]]:
 
 def _download_url(job_id: str, path_value: str) -> str:
     return f"/results/{job_id}/{Path(path_value).name}"
+
+
+def _embedded_file(path_value: str, media_type: str) -> dict[str, str]:
+    """Embed a generated file so downloads survive stateless hosted requests."""
+
+    path = Path(path_value)
+    return {
+        "filename": path.name,
+        "media_type": media_type,
+        "content_base64": base64.b64encode(path.read_bytes()).decode("ascii"),
+    }
+
+
+def _embedded_image(path_value: str) -> str:
+    encoded = base64.b64encode(Path(path_value).read_bytes()).decode("ascii")
+    return f"data:image/png;base64,{encoded}"
 
 
 def _web_payload(job_id: str, report: dict[str, Any]) -> dict[str, Any]:
@@ -86,23 +112,27 @@ def _web_payload(job_id: str, report: dict[str, Any]) -> dict[str, Any]:
         "limitations": report["limitations"],
         "shap_consistency": report["shap_consistency"],
         "downloads": {
-            "json": _download_url(job_id, files["analysis_json"]),
-            "markdown": _download_url(job_id, files["markdown_report"]),
-            "timeline_csv": _download_url(job_id, files["timeline_csv"]),
+            "json": _embedded_file(files["analysis_json"], "application/json"),
+            "markdown": _embedded_file(files["markdown_report"], "text/markdown"),
+            "timeline_csv": _embedded_file(files["timeline_csv"], "text/csv"),
         },
         "charts": {
-            "timeline": _download_url(job_id, files["timeline_chart_png"]),
-            "shap": _download_url(job_id, files["shap_chart_png"]),
+            "timeline": _embedded_image(files["timeline_chart_png"]),
+            "shap": _embedded_image(files["shap_chart_png"]),
         },
     }
 
 
 def _analyze_saved_upload(upload_path: Path, result_dir: Path, job_id: str) -> dict[str, Any]:
-    detector, healthy = _runtime_resources()
-    batch = load_indpensim_csv(upload_path, batch_id_prefix=f"upload_{job_id}")
-    with ANALYSIS_LOCK:
-        report = analyze_batch_phase3(detector, batch, healthy, result_dir)
-    return _web_payload(job_id, report)
+    try:
+        detector, healthy = _runtime_resources()
+        batch = load_indpensim_csv(upload_path, batch_id_prefix=f"upload_{job_id}")
+        with ANALYSIS_LOCK:
+            report = analyze_batch_phase3(detector, batch, healthy, result_dir)
+        return _web_payload(job_id, report)
+    finally:
+        if IS_HOSTED and result_dir.parent == RESULTS_DIR:
+            shutil.rmtree(result_dir, ignore_errors=True)
 
 
 @app.get("/", include_in_schema=False)
@@ -118,6 +148,8 @@ def health() -> dict[str, Any]:
         "model_available": MODEL_PATH.exists(),
         "healthy_background_batches": healthy_count,
         "model_version": "maverickx_phase2_threshold_v2_1",
+        "deployment_mode": "hosted" if IS_HOSTED else "local",
+        "maximum_upload_mb": MAX_UPLOAD_BYTES // (1024 * 1024),
     }
 
 
@@ -131,7 +163,7 @@ async def analyze(file: UploadFile = File(...)) -> dict[str, Any]:
     if not content:
         raise HTTPException(status_code=422, detail="The uploaded CSV is empty.")
     if len(content) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="CSV files are limited to 25 MB.")
+        raise HTTPException(status_code=413, detail="CSV files are limited to 4 MB.")
 
     job_id = uuid4().hex[:12]
     result_dir = RESULTS_DIR / job_id
@@ -150,6 +182,27 @@ async def analyze(file: UploadFile = File(...)) -> dict[str, Any]:
         raise HTTPException(
             status_code=500,
             detail="Analysis failed unexpectedly. Check the server log for details.",
+        ) from error
+
+
+@app.post("/api/demo")
+async def analyze_demo() -> dict[str, Any]:
+    """Run the packaged simulator example without requiring a user upload."""
+
+    if not DEMO_BATCH_PATH.is_file():
+        raise HTTPException(status_code=503, detail="The demonstration batch is unavailable.")
+    job_id = uuid4().hex[:12]
+    result_dir = RESULTS_DIR / job_id
+    result_dir.mkdir(parents=True, exist_ok=False)
+    upload_path = result_dir / "demo_batch.csv"
+    upload_path.write_bytes(DEMO_BATCH_PATH.read_bytes())
+    try:
+        return await run_in_threadpool(_analyze_saved_upload, upload_path, result_dir, job_id)
+    except Exception as error:  # pragma: no cover - defensive API boundary
+        LOGGER.exception("Demonstration analysis failed")
+        raise HTTPException(
+            status_code=500,
+            detail="The demonstration analysis failed unexpectedly.",
         ) from error
 
 

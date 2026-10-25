@@ -2,6 +2,7 @@ const fileInput = document.getElementById("file-input");
 const dropZone = document.getElementById("drop-zone");
 const selectedFile = document.getElementById("selected-file");
 const analyzeButton = document.getElementById("analyze-button");
+const demoButton = document.getElementById("demo-button");
 const loading = document.getElementById("loading");
 const errorPanel = document.getElementById("error");
 const results = document.getElementById("results");
@@ -123,9 +124,12 @@ function renderDownloads(downloads) {
   const container = document.getElementById("downloads");
   container.replaceChildren();
   const labels = { json: "Download JSON", markdown: "Download report", timeline_csv: "Timeline CSV" };
-  Object.entries(downloads).forEach(([key, href]) => {
+  Object.entries(downloads).forEach(([key, file]) => {
     const link = el("a", null, labels[key]);
-    link.href = href; link.setAttribute("download", "");
+    const raw = atob(file.content_base64);
+    const bytes = Uint8Array.from(raw, character => character.charCodeAt(0));
+    link.href = URL.createObjectURL(new Blob([bytes], { type: file.media_type }));
+    link.download = file.filename;
     container.append(link);
   });
 }
@@ -159,16 +163,20 @@ document.querySelectorAll(".chart-tab").forEach(tab => tab.addEventListener("cli
   document.getElementById("chart-image").src = currentCharts[tab.dataset.chart];
 }));
 
-analyzeButton.addEventListener("click", async () => {
-  if (!currentFile) return;
+async function runAnalysis(endpoint, file = null) {
   errorPanel.classList.add("hidden");
   results.classList.add("hidden");
   loading.classList.remove("hidden");
   analyzeButton.disabled = true;
-  const form = new FormData();
-  form.append("file", currentFile);
+  demoButton.disabled = true;
   try {
-    const response = await fetch("/api/analyze", { method: "POST", body: form });
+    const request = { method: "POST" };
+    if (file) {
+      const form = new FormData();
+      form.append("file", file);
+      request.body = form;
+    }
+    const response = await fetch(endpoint, request);
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "The server could not analyze this CSV.");
     renderResult(data);
@@ -178,6 +186,13 @@ analyzeButton.addEventListener("click", async () => {
     errorPanel.scrollIntoView({ behavior: "smooth", block: "center" });
   } finally {
     loading.classList.add("hidden");
-    analyzeButton.disabled = false;
+    analyzeButton.disabled = !currentFile;
+    demoButton.disabled = false;
   }
+}
+
+analyzeButton.addEventListener("click", () => {
+  if (currentFile) runAnalysis("/api/analyze", currentFile);
 });
+
+demoButton.addEventListener("click", () => runAnalysis("/api/demo"));

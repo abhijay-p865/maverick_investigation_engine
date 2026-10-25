@@ -20,6 +20,7 @@ dist/
 build/
 .idea/
 .vscode/
+.vercel/
 
 # Local simulator runtime (downloaded by the phase-2 setup; not project source).
 tools/octave-*/
