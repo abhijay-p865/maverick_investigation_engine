@@ -199,6 +199,11 @@ async def analyze_demo() -> dict[str, Any]:
     try:
         return await run_in_threadpool(_analyze_saved_upload, upload_path, result_dir, job_id)
     except Exception as error:  # pragma: no cover - defensive API boundary
+        LOGGER.error(
+            "Demonstration analysis cause: %s: %s",
+            type(error).__name__,
+            error,
+        )
         LOGGER.exception("Demonstration analysis failed")
         raise HTTPException(
             status_code=500,
