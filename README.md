@@ -33,7 +33,7 @@ contamination-detection claims.
 The normal `python` command is not installed, so this project uses Codex's bundled Python to create a local virtual environment. Once `.venv` exists, all normal project commands use its Python:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install --no-build-isolation -e ".[dev]"
+.\.venv\Scripts\python.exe -m pip install --no-build-isolation -r requirements-dev.txt
 ```
 
 ## Run the interactive website

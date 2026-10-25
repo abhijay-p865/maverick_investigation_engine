@@ -21,9 +21,6 @@ dependencies = [
   "uvicorn==0.54.0",
 ]
 
-[project.optional-dependencies]
-dev = ["httpx>=0.28", "pyarrow==26.0.0", "pytest>=8"]
-
 [project.scripts]
 maverickx = "maverickx.cli:main"
 maverickx-web = "maverickx.web:run"

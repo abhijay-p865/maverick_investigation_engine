@@ -426,7 +426,7 @@ Day 5:
 
 ```powershell
 # Install
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 
 # Test
 .\.venv\Scripts\python.exe -m pytest -q
