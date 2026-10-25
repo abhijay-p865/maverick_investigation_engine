@@ -38,7 +38,17 @@ The normal `python` command is not installed, so this project uses Codex's bundl
 
 ## Run the interactive website
 
-The repository now includes a local FastAPI website with MaverickX-inspired
+### Public, no-install version
+
+Open **[maverick-investigation-engine.vercel.app](https://maverick-investigation-engine.vercel.app/)**.
+No account, download, or command line is required. Select **Try the example
+batch** for a one-click demonstration, or upload an IndPenSim-format CSV up to
+4 MB. The result appears in the same page and its JSON, Markdown, and timeline
+files can be downloaded from the report.
+
+### Local development version
+
+The repository also includes a local FastAPI website with MaverickX-inspired
 black-and-white styling. It accepts a completed IndPenSim-format CSV, runs the
 saved v2.1 detector and Phase 3 workflow, then displays and downloads the
 resulting investigation report.
@@ -57,6 +67,12 @@ The small `runtime_assets/` directory contains the frozen model, ten healthy
 reference batches needed for SHAP/process comparisons, and one demonstration
 batch. Large generated datasets, outputs, the virtual environment, and the
 Octave runtime remain intentionally excluded from Git.
+
+The Vercel project uses `VERCEL_SUPPORT_LARGE_FUNCTIONS=1` because the complete
+scientific Python runtime, including SHAP and scikit-learn, is slightly larger
+than the platform's standard Python-function bundle. The saved v2.1 model was
+made serialization-portable with `scripts/make_model_portable.py`; that script
+verifies that every reference anomaly score remains exactly unchanged.
 
 ## Reproduce the pilot
 

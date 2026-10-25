@@ -242,3 +242,34 @@ Next:
 
 - Connect the public GitHub repository to Vercel, deploy the production build, run a real example analysis at the public URL, and add that URL to the README.
 
+## 2026-10-25 — Public no-install deployment completed
+
+Completed:
+
+- Connected the public GitHub repository to Vercel with automatic production deployment from `main`.
+- Published the permanent public tool at `https://maverick-investigation-engine.vercel.app/`.
+- Enabled Vercel large Python functions so the complete scikit-learn, SHAP, pandas, and charting runtime remains intact.
+- Converted only the saved model's pandas column-label metadata from PyArrow-backed strings to ordinary Python strings, removing an unnecessary hosted dependency without retraining or retuning v2.1.
+- Added `scripts/make_model_portable.py` so that serialization change is reproducible and checks exact score equality before replacing the artifact.
+
+Verified:
+
+- Portable-artifact check: every anomaly score for the demonstration batch was exactly unchanged, with zero numerical tolerance.
+- Full local automated suite: 31 tests passed.
+- Public home page: HTTP 200 and expected MaverickX interface rendered in a browser.
+- Public health endpoint: ready, v2.1 model present, ten healthy background batches present, hosted mode active.
+- Public one-click example: HTTP 200 in 8.4 seconds; 8 anomaly events; pH probe ranked first; all three report downloads and both embedded charts returned.
+- Public CSV upload: HTTP 200 in 3.2 seconds; 8 anomaly events; SHAP additivity checks passed; three downloadable report formats returned.
+- Browser result rendering: summary, rankings, anomaly timeline/SHAP tabs, event evidence, sensor trends, downloads, and scientific limitations all appeared successfully.
+
+Issues:
+
+- The public prototype intentionally has no user accounts or durable job history. Uploaded data is processed for the response using temporary function storage.
+- The first request after an idle period may be slower because the scientific Python function can start cold.
+- The tool remains validated on simulated process and sensor faults, not real microbial contamination data.
+
+Next:
+
+- Give the public URL to the product-website teammate and link to it as the interactive investigation demonstration.
+- Keep the current detector and scientific limitations unchanged unless a future validation phase supplies new evidence.
+
