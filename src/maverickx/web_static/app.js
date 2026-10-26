@@ -42,7 +42,33 @@ function metric(label, value) {
   return card;
 }
 
-function renderPriorities(items) {
+function formatScore(value) {
+  if (value !== 0 && Math.abs(value) < 0.0001) return value.toExponential(2);
+  return value.toFixed(4);
+}
+
+function evidenceBlock(label, content, className = "") {
+  const block = el("div", `evidence-block ${className}`.trim());
+  block.append(el("span", "evidence-label", label));
+  if (typeof content === "string") {
+    block.append(el("p", null, content));
+  } else {
+    block.append(content);
+  }
+  return block;
+}
+
+function priorityTiming(item, events) {
+  const eventIds = item.supporting_event_ids || [];
+  const byId = new Map(events.map(event => [event.event_id, event]));
+  const linked = eventIds.map(id => byId.get(id)).filter(Boolean);
+  if (!linked.length) return "No single anomaly event was linked to this batch-level priority.";
+  return linked
+    .map(event => `Event ${event.event_id}: ${event.start_h.toFixed(1)}–${event.end_h.toFixed(1)} h`)
+    .join(" · ");
+}
+
+function renderPriorities(items, events) {
   const list = document.getElementById("priority-list");
   list.replaceChildren();
   if (!items.length) {
@@ -54,10 +80,18 @@ function renderPriorities(items) {
     const rank = el("div", "priority-rank", String(item.rank).padStart(2, "0"));
     const content = el("div");
     content.append(el("h3", null, item.investigation_title));
-    const observation = item.confirmed_observations?.[0] || "No single dominant observation.";
-    content.append(el("p", "observation", observation));
-    content.append(el("p", null, item.suggested_operator_verification));
-    const score = el("div", "score", `EVIDENCE ${item.priority_score.toFixed(3)}`);
+    const observations = document.createElement("ul");
+    observations.className = "observation-list";
+    (item.confirmed_observations?.slice(0, 2) || ["No single dominant observation."])
+      .forEach(observation => observations.append(el("li", null, observation)));
+    content.append(
+      evidenceBlock("Confirmed observation", observations, "confirmed"),
+      evidenceBlock("When observed", priorityTiming(item, events), "timing"),
+      evidenceBlock("Possible explanation", item.possible_explanation),
+      evidenceBlock("Suggested check", item.suggested_operator_verification)
+    );
+    const score = el("div", "score");
+    score.append(el("span", null, "PRIORITY SCORE"), el("strong", null, item.priority_score.toFixed(3)));
     row.append(rank, content, score);
     list.append(row);
   });
@@ -81,7 +115,7 @@ function renderEvents(events) {
     );
     const body = el("div", "event-body");
     const evidence = el("div");
-    evidence.append(el("h4", null, "Model explanation"), el("p", null, event.interpretation));
+    evidence.append(el("h4", null, "Confirmed model observation"), el("p", null, event.interpretation));
     const table = el("table", "feature-table");
     const head = document.createElement("thead");
     const headRow = document.createElement("tr");
@@ -100,7 +134,7 @@ function renderEvents(events) {
     table.append(tbody); evidence.append(table);
 
     const checks = el("div");
-    checks.append(el("h4", null, "Top checks for this event"));
+    checks.append(el("h4", null, "Possible investigations to verify"));
     const ol = document.createElement("ol");
     event.investigations.forEach(item => {
       const li = document.createElement("li");
@@ -141,11 +175,11 @@ function renderResult(data) {
   metrics.replaceChildren(
     metric("Anomaly events", String(data.summary.anomaly_event_count)),
     metric("Flagged windows", `${data.summary.flagged_window_count} / ${data.summary.eligible_window_count}`),
-    metric("Maximum score", data.summary.maximum_anomaly_score.toFixed(4)),
+    metric("Maximum score", formatScore(data.summary.maximum_anomaly_score)),
     metric("First priority", data.ranked_investigations[0]?.investigation_title || "None")
   );
   renderDownloads(data.downloads);
-  renderPriorities(data.ranked_investigations);
+  renderPriorities(data.ranked_investigations, data.events);
   renderEvents(data.events);
   const limitations = document.getElementById("limitations-list");
   limitations.replaceChildren(...data.limitations.map(item => el("li", null, item)));

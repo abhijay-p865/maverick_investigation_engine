@@ -6,7 +6,7 @@ import pandas as pd
 
 from maverickx.data import BatchData, BatchMetadata, DataQualityReport
 from maverickx.features import FeatureConfig
-from maverickx.investigation import rank_event_investigations
+from maverickx.investigation import rank_batch_investigations, rank_event_investigations
 from maverickx.investigation_evaluation import evaluate_investigation_reports
 from maverickx.phase2 import fit_candidate
 from maverickx.phase3 import analyze_batch_phase3
@@ -99,6 +99,16 @@ def test_stable_thermal_controls_prioritize_temperature_probe() -> None:
         event, make_batch("test", faulty=False), StableProcessReference()
     )
     assert rankings[0]["category"] == "temperature_probe"
+
+
+def test_batch_priority_links_only_to_its_strongest_event() -> None:
+    events = [
+        {"event_id": 1, "ranked_investigations": [{"category": "probe", "priority_score": 0.2}]},
+        {"event_id": 2, "ranked_investigations": [{"category": "probe", "priority_score": 0.8}]},
+        {"event_id": 3, "ranked_investigations": [{"category": "probe", "priority_score": 0.5}]},
+    ]
+    ranked = rank_batch_investigations(events)
+    assert ranked[0]["supporting_event_ids"] == [2]
 
 
 def test_investigation_evaluation_counts_detection_misses_end_to_end() -> None:

@@ -295,3 +295,30 @@ Next:
 
 - Upload any CSV from the Downloads test-pack folder to the public investigation tool and compare the healthy and faulty reports.
 
+## 2026-10-26 — Anomalyze interface and evidence-timing revision
+
+Completed:
+
+- Removed the top MaverickX/research-prototype bar and the separate `01 / ANALYZE` / `Evidence first. Conclusions second.` introduction.
+- Renamed the visible web experience to Anomalyze and updated the upload explanation accordingly.
+- Made investigation cards use the same evidence vocabulary as the on-page guide: confirmed observation, possible explanation, suggested check, and priority score.
+- Added `When observed` to every batch-level priority and linked it to the anomaly event where that rule received its strongest evidence score.
+- Relabeled event details as confirmed model observations and possible investigations to verify.
+- Added more precise display behavior for very small nonzero anomaly scores.
+
+Verified:
+
+- JavaScript syntax validation passed.
+- Focused web and investigation tests passed, including a new test that prevents a batch-level priority from being misleadingly linked to every anomaly event.
+- Local browser verification confirmed the removed sections, Anomalyze wording, labeled evidence, strongest-event time, priority score, event details, and responsive layout all render correctly.
+- Reanalyzed the fresh aeration-fault batch without using its fault label as input: six events and 45 flagged windows were reproduced, while aeration investigation remained fifth. This is recorded as a real ranking miss rather than being corrected from ground truth.
+
+Issues:
+
+- The fresh aeration-fault example shows that a correct detected period does not guarantee the correct equipment area ranks first or in the Top 3. The model/rules can prioritize correlated pH, thermal, and dissolved-oxygen evidence instead.
+- `When observed` identifies the event with the strongest evidence for a recommendation; it does not claim that the physical issue began at that exact time.
+
+Next:
+
+- Deploy the interface revision and verify the complete report on the public production URL.
+

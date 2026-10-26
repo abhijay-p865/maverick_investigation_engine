@@ -20,9 +20,22 @@ def test_home_and_health_are_available() -> None:
     home = client.get("/")
     assert home.status_code == 200
     assert "Turn batch data into an investigation plan" in home.text
+    assert "Anomalyze finds unusual periods" in home.text
+    assert "MAVERICK X" not in home.text
+    assert "RESEARCH PROTOTYPE · V2.1" not in home.text
+    assert "Evidence first" not in home.text
     health = client.get("/api/health")
     assert health.status_code == 200
     assert health.json()["model_version"] == "maverickx_phase2_threshold_v2_1"
+
+
+def test_priority_interface_labels_evidence_and_event_timing() -> None:
+    script = client.get("/assets/app.js")
+    assert script.status_code == 200
+    assert 'evidenceBlock("Confirmed observation"' in script.text
+    assert 'evidenceBlock("Possible explanation"' in script.text
+    assert 'evidenceBlock("When observed"' in script.text
+    assert "supporting_event_ids" in script.text
 
 
 def test_upload_rejects_non_csv() -> None:

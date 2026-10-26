@@ -261,7 +261,12 @@ def rank_event_investigations(
 
 
 def rank_batch_investigations(explained_events: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Aggregate event rankings using the strongest evidence seen in the batch."""
+    """Aggregate event rankings using the strongest evidence seen in the batch.
+
+    Each batch-level priority links to the event that produced its strongest
+    score. Listing every event would be misleading because every transparent
+    rule is evaluated for every anomaly event, even when its support is weak.
+    """
 
     by_category: dict[str, dict[str, Any]] = {}
     for event in explained_events:
@@ -271,8 +276,6 @@ def rank_batch_investigations(explained_events: list[dict[str, Any]]) -> list[di
             current = by_category.get(category)
             if current is None or item["priority_score"] > current["priority_score"]:
                 by_category[category] = candidate
-            elif event["event_id"] not in current["supporting_event_ids"]:
-                current["supporting_event_ids"].append(event["event_id"])
     ranked = sorted(by_category.values(), key=lambda item: item["priority_score"], reverse=True)
     for rank, item in enumerate(ranked, start=1):
         item["rank"] = rank
