@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Anomalyze post-batch bioreactor investigation prototype">
-  <title>Anomalyze — Post-Batch Investigation</title>
+  <meta name="description" content="Post-batch bioreactor investigation aid for reviewing unusual sensor patterns">
+  <title>MaverickX Anomalyze — Batch Investigation</title>
   <link rel="stylesheet" href="/assets/styles.css">
 </head>
 <body>
   <main id="top">
     <section class="hero">
       <div class="hero-grid" aria-hidden="true"></div>
-      <div class="eyebrow light">POST-BATCH INVESTIGATION ENGINE</div>
-      <h1>Turn batch data into an investigation plan.</h1>
-      <p>Upload a completed fermentation CSV. Anomalyze finds unusual periods, explains the model evidence, and ranks the systems worth checking first.</p>
+      <div class="eyebrow light">POST-BATCH PROCESS REVIEW</div>
+      <h1>Find unusual batch behavior. Decide what to check next.</h1>
+      <p>Upload a completed fermentation CSV. Anomalyze highlights unusual periods, shows the measurements behind each flag, and ranks practical follow-up checks.</p>
       <a class="text-link light" href="#analyze">Analyze a batch <span>→</span></a>
     </section>
 
@@ -22,7 +22,7 @@
         <div class="panel-heading">
           <div>
             <p class="eyebrow">BATCH INPUT</p>
-            <h3>Upload an IndPenSim-format CSV</h3>
+            <h3>Upload a compatible batch CSV</h3>
           </div>
           <span class="file-limit">MAX 4 MB</span>
         </div>
@@ -41,29 +41,32 @@
             <li>Dissolved oxygen</li><li>pH</li><li>Temperature</li><li>Pressure</li>
           </ul>
         </div>
+        <p class="local-note">Use elapsed time (h), dissolved oxygen (mg/L), pH, temperature (K), and pressure (bar). Small internal gaps may be filled automatically; larger gaps stop the analysis.</p>
+        <p><a class="text-link" href="/assets/csv-schema-guide.html">CSV schema guide <span>↗</span></a></p>
+        <p><a class="text-link" href="/api/example.csv" download>Download example CSV <span>↓</span></a></p>
         <div class="analysis-actions">
           <button class="primary-button" id="analyze-button" disabled>
             <span>Run investigation</span><b aria-hidden="true">→</b>
           </button>
           <button class="secondary-button" id="demo-button" type="button">Try the example batch</button>
         </div>
-        <p class="local-note">No account or software installation is required. The public prototype analyzes one CSV at a time and does not keep a durable batch history.</p>
+        <p class="local-note">Runs one CSV at a time. Uploaded files are not stored as a batch history.</p>
       </div>
 
       <aside class="process-panel">
         <p class="eyebrow">WHAT HAPPENS NEXT</p>
         <ol class="process-list">
-          <li><span>01</span><div><strong>Validate</strong><p>Check timestamps, required measurements, and missing data.</p></div></li>
-          <li><span>02</span><div><strong>Detect</strong><p>Score rolling sensor patterns with the saved v2.1 model.</p></div></li>
-          <li><span>03</span><div><strong>Explain</strong><p>Use Kernel SHAP to identify what raised each anomaly score.</p></div></li>
-          <li><span>04</span><div><strong>Prioritize</strong><p>Rank transparent equipment, sensor, and process checks.</p></div></li>
+          <li><span>01</span><div><strong>Check the file</strong><p>Confirm the time series and required measurements are usable.</p></div></li>
+          <li><span>02</span><div><strong>Find unusual periods</strong><p>Compare patterns across the batch with healthy reference data.</p></div></li>
+          <li><span>03</span><div><strong>Show the evidence</strong><p>Identify the measurements that most influenced each flag.</p></div></li>
+          <li><span>04</span><div><strong>Rank follow-up checks</strong><p>Order practical checks based on the evidence available.</p></div></li>
         </ol>
       </aside>
     </section>
 
     <section class="analysis-state section-shell hidden" id="loading" aria-live="polite">
       <div class="loader-ring" aria-hidden="true"></div>
-      <div><p class="eyebrow">ANALYSIS IN PROGRESS</p><h2>Reading the batch history…</h2><p>This usually takes several seconds. SHAP is explaining the actual saved model—not a substitute classifier.</p></div>
+      <div><p class="eyebrow">ANALYSIS IN PROGRESS</p><h2>Reviewing the batch…</h2><p>The analysis compares the batch with healthy simulator patterns. This can take several seconds.</p></div>
     </section>
 
     <section class="error-panel section-shell hidden" id="error" role="alert">
@@ -86,38 +89,39 @@
 
       <div class="section-shell content-grid">
         <section>
-          <p class="section-number">02 / PRIORITIZE</p>
+          <p class="section-number">01 / PRIORITIZE</p>
           <h2>Where to investigate first</h2>
-          <p class="lede compact">Relative evidence rankings—not probabilities of root cause.</p>
+          <p class="lede compact">Follow-up checks ranked by the evidence in this batch. Scores are not probabilities of root cause.</p>
           <div class="priority-list" id="priority-list"></div>
         </section>
         <aside class="evidence-key">
           <p class="eyebrow">HOW TO READ THIS</p>
-          <p><strong>Confirmed observation</strong> means something measured in the uploaded batch or model explanation.</p>
-          <p><strong>Possible explanation</strong> is a hypothesis worth checking, not a diagnosis.</p>
-          <p><strong>Priority score</strong> combines SHAP and process-pattern support. It is not a probability.</p>
+          <p><strong>Observed evidence</strong> comes directly from the uploaded measurements.</p>
+          <p><strong>Possible explanation</strong> is a reason to investigate, not a diagnosis.</p>
+          <p><strong>Priority score</strong> runs from 0 to 1. A higher score means the available evidence supports checking that area sooner; it is not a probability.</p>
+          <p><strong>Unusual-behavior score</strong> measures how different a measurement pattern was from healthy simulator history. It does not estimate contamination risk.</p>
         </aside>
       </div>
 
       <section class="chart-section section-shell">
         <div class="section-heading">
-          <div><p class="section-number">03 / REVIEW</p><h2>Batch evidence</h2></div>
+          <div><p class="section-number">02 / REVIEW</p><h2>Batch evidence</h2></div>
           <div class="chart-tabs" role="tablist">
             <button class="chart-tab active" data-chart="timeline" role="tab">Timeline</button>
-            <button class="chart-tab" data-chart="shap" role="tab">SHAP evidence</button>
+            <button class="chart-tab" data-chart="shap" role="tab">Model evidence</button>
           </div>
         </div>
         <div class="chart-frame"><img id="chart-image" alt="Generated batch analysis chart"></div>
       </section>
 
       <section class="events-section section-shell">
-        <p class="section-number">04 / EVENTS</p>
-        <h2>Detected abnormal periods</h2>
+        <p class="section-number">03 / EVENTS</p>
+        <h2>Unusual periods</h2>
         <div id="events-list" class="events-list"></div>
       </section>
 
       <section class="limitations section-shell">
-        <div><p class="eyebrow light">SCIENTIFIC LIMITS</p><h2>This is an investigation aid,<br>not a contamination diagnosis.</h2></div>
+        <div><p class="eyebrow light">SCIENTIFIC LIMITS</p><h2>Use this to guide an investigation—not to diagnose contamination.</h2></div>
         <ul id="limitations-list"></ul>
       </section>
     </section>
@@ -125,7 +129,7 @@
 
   <footer>
     <span>ANOMALYZE · POST-BATCH INVESTIGATION</span>
-    <span>SIMULATION-VALIDATED RESEARCH PROTOTYPE</span>
+    <span>SIMULATION-TESTED RESEARCH PROTOTYPE</span>
   </footer>
   <script src="/assets/app.js" defer></script>
 </body>

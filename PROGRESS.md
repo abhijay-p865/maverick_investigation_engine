@@ -322,3 +322,204 @@ Next:
 
 - Deploy the interface revision and verify the complete report on the public production URL.
 
+## 2026-10-25 — Report contract and reproducibility hardening
+
+Completed:
+
+- Added versioned JSON Schema `schemas/investigation-report-v1.schema.json` and a Phase 3 regression assertion that validates the generated report against it.
+- Added report schema version, UTC analysis timestamp, SHA-256 of the exact CSV bytes parsed, and model artifact SHA-256 when the CLI or web server loads the detector from a known file. Reports created from in-memory batches accurately record null hashes.
+- Kept existing model version and feature configuration in the report. A code commit SHA is not claimed because this checkout has no Git metadata.
+- Added a CI runtime-asset check and a regression test for the model, demo CSV, and healthy background CSVs.
+- Added the downloadable example CSV and a separate upload schema guide with the required IndPenSim headings, units, and validation behavior.
+- Added finite-value rejection for required measurements and timestamps.
+
+Verified:
+
+- `PYTHONPATH=src pytest -q tests/test_data.py tests/test_package.py`: 10 passed, 1 skipped (optional downloaded IndPenSim dataset unavailable).
+- `PYTHONPATH=src pytest -q --ignore=tests/test_web.py --ignore=tests/test_phase3.py`: 22 passed, 1 skipped.
+- Python syntax compilation passed.
+- JSON Schema meta-schema validation and GitHub Actions YAML parsing passed using the available Anaconda Python environment.
+- Initial full-suite collection in the base environment was blocked by missing `shap` and `fastapi`. After installing only the declared `requirements-dev.txt` dependencies into `.venv`, the full suite passed (see the later local verification entry).
+
+Partially completed:
+
+- Upload guidance and a downloadable template are available, but there is no pre-analysis quality preview or editable user column mapping.
+- Direct Python callers that pass an in-memory detector do not provide an artifact hash; the report records null in that case. Git commit SHA is not available in this checkout.
+
+Remaining:
+
+- Add configurable plant-tag/unit mappings and a pre-analysis preview before supporting non-IndPenSim exports.
+
+## 2026-10-25 — Local verification and public deployment check
+
+Locally verified:
+
+- Installed the existing development requirements in the ignored project `.venv`; no undeclared dependencies were added.
+- `.venv/bin/python -m pytest -q`: 35 passed, 1 skipped, with 4 third-party deprecation warnings. The skip is the optional integration test requiring the separately downloaded IndPenSim parquet dataset.
+- The Phase 3 generated-report test validates the saved JSON against the versioned schema. The HTTP upload test validates the returned report against the schema and checks exact input and model file SHA-256 values.
+- The existing v2.1 model artifact was not modified. No detector retraining, threshold changes, or ranking-weight changes were made.
+- The v2.1 artifact SHA-256 remains `0ceead8f569fdd9a4f5045b057f50084bbc2dc08d111a35df8a8678c7cd782a2`.
+
+Public site checked:
+
+- The site loaded and its one-click demo and CSV upload both generated reports (8 events; v2.1 model).
+- The live upload report did not contain `analysis_metadata`, and the live upload page did not contain the new CSV example download or schema-guide link. The public deployment therefore does not include these local changes.
+
+Deployment status: not deployed.
+
+- The Desktop source folder has no `.git` directory, `.vercel/project.json`, or installed Vercel CLI. It has been left unchanged.
+- The user-provided GitHub URL was verified as the application repository: its homepage metadata matches the live URL and its default/only remote branch is `main` at `de14cd4`.
+- GitHub reports a successful `Vercel` status for that `main` commit, targeting the existing `abhijayprabhu0-7017s-projects/maverick-investigation-engine` project. This confirms the GitHub repository is associated with the live Vercel project.
+- The reviewed local changes are in a separate clone on feature branch `codex/complete-report-metadata`; no production settings have been changed. Publication is pending the authenticated push/PR workflow.
+- A `git push --dry-run` to the verified remote was blocked because the authenticated account lacked write permission. The branch has not been pushed, no PR has been opened, and no deployment has been triggered.
+
+Remaining:
+
+- Pre-analysis quality preview and user-editable column mapping.
+- Configurable plant tag/unit mappings, broader scientific validation, process logs, false-alert reduction, and production security/storage/job processing.
+- Deploy the verified local changes and re-check the live upload report and metadata.
+
+## 2026-10-25 — Desktop integration and handoff verification
+
+Completed:
+
+- Compared the Desktop project with reviewed commit `36a8708`. All reviewed source, test, schema, upload, and CI changes were already present; only the repository/deployment status wording in this progress log differed. Integrated the verified repository association and actual 403 push-permission result without replacing the rest of the Desktop log.
+- Preserved the v2.1 model artifact. Its SHA-256 is `0ceead8f569fdd9a4f5045b057f50084bbc2dc08d111a35df8a8678c7cd782a2`.
+
+Verified:
+
+- Bare `.venv/bin/python -m pytest -q` could not collect tests because this existing environment does not resolve the editable package when invoked without a source path (`ModuleNotFoundError: maverickx`).
+- `PYTHONPATH=src .venv/bin/python -m pytest -q`: 35 passed, 1 skipped, 4 third-party deprecation warnings. The skip requires the separately downloaded IndPenSim parquet dataset.
+- The generated Phase 3 report and HTTP CSV upload report passed JSON Schema validation; the upload test checked input/model hashes and report response. Example download and schema-guide routes passed.
+
+Remaining:
+
+- The verified GitHub repository refused push access for `sreyakurup0-alt` with HTTP 403. The local reviewed branch and this Desktop project remain ready for handoff; no PR, merge, or deployment occurred.
+- Create and validate the requested self-contained ZIP handoff before sending it to the repository owner.
+
+## 2026-10-26 — Reviewed handoff integrated into the working repository
+
+Completed:
+
+- Applied the reviewed `Maverick_Handoff` patch directly to its intended base commit, `de14cd4d40b61d0e29146d86788f563bc6601fe8`.
+- Added the versioned report schema, report provenance hashes and UTC timestamp, finite-value input validation, runtime-asset CI checks, CSV schema guidance, downloadable example CSV, and their regression tests.
+- Installed the newly declared `jsonschema` development dependency in the ignored local `.venv` so the upgraded suite could be exercised.
+- Preserved the existing v2.1 One-Class SVM model without retraining or changing its threshold, features, or investigation-ranking weights.
+
+Verified:
+
+- `PYTHONPATH=src .venv/Scripts/python.exe -m pytest -q`: 36 passed with 4 third-party deprecation warnings in 257.30 seconds.
+- The optional IndPenSim parquet integration test ran in this workspace rather than being skipped.
+- The model SHA-256 remains `0ceead8f569fdd9a4f5045b057f50084bbc2dc08d111a35df8a8678c7cd782a2`.
+- Git's patch check and post-application diff check passed.
+
+Issues:
+
+- The four warnings come from SHAP/Matplotlib and FastAPI/Starlette dependencies; they do not indicate failed MaverickX behavior.
+- This upgrade improves engineering quality and reproducibility, not measured model performance.
+
+Next:
+
+- Review and commit the integrated changes, then deploy and verify the live report metadata, CSV guide, example download, and upload flow when publication is requested.
+
+## 2026-10-26 — Plain-language website results and score definitions
+
+Completed:
+
+- Added a presentation-only translation layer that preserves stable machine identifiers in JSON/CSV output while giving measurements and rolling features readable website/report names.
+- Replaced raw feature names in event tables with labels such as `Dissolved oxygen — recent variability` and added a short explanation of what each measurement pattern represents.
+- Replaced internal sensor and process-channel identifiers in investigation observations, event interpretations, sensor trends, Markdown reports, and generated chart legends.
+- Renamed technical website labels to plain-language terms, including `Unusual periods`, `Analysis windows flagged`, `Highest unusual-behavior score`, and `Model evidence`.
+- Defined the priority score as a relative 0-to-1 evidence score: higher values mean stronger support for checking an area before lower-ranked areas, not a probability or diagnosis.
+- Added concise explanations for the unusual-behavior score and analysis windows and clarified that model effects do not establish a physical cause.
+
+Verified:
+
+- Python compilation and JavaScript syntax checks passed.
+- Focused website and Phase 3 tests passed: 13 passed with 4 third-party deprecation warnings.
+- Full suite passed: 36 passed with the same 4 third-party deprecation warnings.
+- Local browser verification ran the packaged example end to end and confirmed readable feature names, definitions, score wording, investigation observations, sensor trends, and chart legend labels without raw variable names.
+
+Issues:
+
+- The application still exposes technical identifiers in machine-readable JSON/CSV downloads by design so integrations remain stable; they are no longer used as user-facing website labels.
+- This presentation change does not alter model scores, thresholds, ranking weights, or scientific performance.
+
+Next:
+
+- Possible future improvement: design a separate batch-record and SOP analysis tool that can connect operational evidence to investigation rankings. Any future implementation must keep those documents out of anomaly-model features and must not present a match as proof of contamination or root cause.
+
+## 2026-10-26 — Batch-record and SOP analysis deferred
+
+Completed:
+
+- Stopped development of the batch-record and SOP feature at the project owner's request.
+- Removed the unfinished document parsers, upload controls, API fields, ranking adjustments, tests, and project dependency declarations.
+- Retained the idea only as the possible future improvement above.
+
+Verified:
+
+- Repository search confirmed that the unfinished document-ingestion implementation is no longer present.
+- Python compilation and JavaScript syntax checks passed.
+- Focused Phase 3 and website tests passed: 13 passed with 4 third-party deprecation warnings.
+
+Issues:
+
+- The optional document libraries installed in the ignored local virtual environment are harmless but are no longer declared or required by the project.
+
+Next:
+
+- Keep the current product focused on CSV batch analysis and the completed plain-language website results.
+
+## 2026-10-26 — Day 1 multi-timescale detector experiment
+
+Completed:
+
+- Added a reproducible development-only experiment comparing the current three-sample v2.1 One-Class SVM with short-plus-long-window candidates using 12-sample (2.4 h) and 18-sample (3.6 h) branches.
+- Put the two branch scores on a common empirical healthy-development percentile scale and calibrated the combined threshold using healthy development batches only.
+- Preserved the complete-batch split, kept fault labels out of model features, did not load the Phase 2 test partition, and did not overwrite the v2.1 production artifact.
+- Saved the development leaderboard and decision record under `outputs/day1_multiscale/`.
+
+Verified:
+
+- The selected development candidate was the three-plus-12-sample SVM at the tested 0.975 healthy-score quantile.
+- Development fault-event recall was unchanged at 50/55 (90.9%).
+- Healthy false-alert episodes decreased from 0.461 to 0.377 per batch-day.
+- Window recall increased from 17.82% to 22.66%, and window F2 increased from 21.01% to 26.18%.
+- Window precision decreased from 73.90% to 68.94%, while the healthy false-alert window fraction increased from 1.56% to 2.50%. The candidate therefore produces fewer but longer healthy alert episodes.
+- No fault category gained or lost a detected interval on development data.
+- The experiment runner compiled and completed successfully. Focused regression tests passed: 8 passed.
+
+Issues:
+
+- This is mixed development evidence, not an independent performance result. The candidate improved alert episode burden and window coverage but did not recover an additional fault interval and reduced precision.
+- The original Phase 2 test set has already been viewed, so it cannot provide a new independent claim. A genuinely fresh simulator validation set is required before promotion.
+
+Next:
+
+- Advance the 3+12-sample candidate only to a Day 2 fresh-validation decision. Keep v2.1 in production unless the candidate demonstrates a worthwhile tradeoff on newly generated complete batches.
+
+## 2026-10-27 — Website copy, scientific limits, hero image, and domain
+
+Completed:
+
+- Rewrote the landing-page headline and supporting copy to state the workflow directly without model-version language or inflated claims.
+- Replaced the technical `What happens next` descriptions with four general steps: check the file, find unusual periods, show the evidence, and rank follow-up checks.
+- Reduced the scientific-limits section from six partly repetitive statements to four concise limitations and replaced the diagnostic-sounding headline with guidance-focused wording.
+- Added the user-supplied Edward Jenner/Pexels laboratory image as the hero background with a heavy black overlay for legibility.
+- Renamed the Vercel project to `maverickx-anomalyze` and attached the verified production domain `maverickx-anomalyze.vercel.app`.
+
+Verified:
+
+- Focused Phase 3 and website tests passed: 13 passed with 4 third-party deprecation warnings.
+- A separate real-pipeline regression check passed after removing the remaining visible v2.1 summary wording.
+- Local browser verification loaded the hero asset, completed the example analysis through the API, rendered the simplified report language, and displayed the revised four-item limits section.
+
+Issues:
+
+- The new domain is attached to the Vercel project, but it will continue to serve the prior production build until the reviewed source changes are deployed.
+
+Next:
+
+- Run the complete test suite, publish the reviewed source, and verify the new production domain end to end.
+

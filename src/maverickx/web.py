@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import logging
 import os
 import re
@@ -123,12 +124,22 @@ def _web_payload(job_id: str, report: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _analyze_saved_upload(upload_path: Path, result_dir: Path, job_id: str) -> dict[str, Any]:
+def _analyze_saved_upload(
+    upload_path: Path,
+    result_dir: Path,
+    job_id: str,
+) -> dict[str, Any]:
     try:
         detector, healthy = _runtime_resources()
         batch = load_indpensim_csv(upload_path, batch_id_prefix=f"upload_{job_id}")
         with ANALYSIS_LOCK:
-            report = analyze_batch_phase3(detector, batch, healthy, result_dir)
+            report = analyze_batch_phase3(
+                detector,
+                batch,
+                healthy,
+                result_dir,
+                model_artifact_sha256=hashlib.sha256(MODEL_PATH.read_bytes()).hexdigest(),
+            )
         return _web_payload(job_id, report)
     finally:
         if IS_HOSTED and result_dir.parent == RESULTS_DIR:
@@ -153,6 +164,19 @@ def health() -> dict[str, Any]:
     }
 
 
+@app.get("/api/example.csv", include_in_schema=False)
+def example_csv() -> FileResponse:
+    """Download the packaged IndPenSim-format batch used in the demo."""
+
+    if not DEMO_BATCH_PATH.is_file():
+        raise HTTPException(status_code=503, detail="The example CSV is unavailable.")
+    return FileResponse(
+        DEMO_BATCH_PATH,
+        media_type="text/csv",
+        filename="maverickx_example_batch.csv",
+    )
+
+
 @app.post("/api/analyze")
 async def analyze(file: UploadFile = File(...)) -> dict[str, Any]:
     filename = file.filename or "batch.csv"
@@ -164,7 +188,6 @@ async def analyze(file: UploadFile = File(...)) -> dict[str, Any]:
         raise HTTPException(status_code=422, detail="The uploaded CSV is empty.")
     if len(content) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="CSV files are limited to 4 MB.")
-
     job_id = uuid4().hex[:12]
     result_dir = RESULTS_DIR / job_id
     result_dir.mkdir(parents=True, exist_ok=False)

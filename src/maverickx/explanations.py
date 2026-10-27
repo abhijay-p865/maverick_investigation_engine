@@ -11,6 +11,11 @@ import shap
 from .data import BatchData
 from .features import extract_rolling_features
 from .phase2 import CandidateDetector
+from .presentation import (
+    feature_display_name,
+    feature_plain_language_meaning,
+    measurement_display_name,
+)
 
 
 def _feature_unit(name: str, units: dict[str, str]) -> str:
@@ -63,6 +68,7 @@ def _sensor_readings(
         observations.append(
             {
                 "sensor": sensor,
+                "display_name": measurement_display_name(sensor),
                 "unit": batch.metadata.units.get(sensor, "unknown"),
                 "start_value": float(values[0]),
                 "end_value": float(values[-1]),
@@ -159,6 +165,8 @@ def explain_anomaly_events(
             feature_details.append(
                 {
                     "feature": name,
+                    "display_name": feature_display_name(name),
+                    "plain_language_meaning": feature_plain_language_meaning(name),
                     "sensor": sensor,
                     "statistic": statistic,
                     "shap_contribution": contribution,
@@ -211,6 +219,7 @@ def explain_anomaly_events(
         sensor_summary = [
             {
                 "sensor": sensor,
+                "display_name": measurement_display_name(sensor),
                 "mean_positive_contribution": values["positive"] / divisor,
                 "mean_negative_contribution": values["negative"] / divisor,
                 "mean_absolute_contribution": values["absolute"] / divisor,
@@ -228,7 +237,7 @@ def explain_anomaly_events(
             key=lambda item: item["mean_absolute_shap_contribution"], reverse=True
         )
         positive_sensors = [item for item in sensor_summary if item["mean_positive_contribution"] > 0]
-        names = [item["sensor"] for item in positive_sensors[:2]]
+        names = [item["display_name"] for item in positive_sensors[:2]]
         interpretation = (
             "The model score was pushed upward most by " + ", ".join(names) + "."
             if names

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -116,6 +117,7 @@ def run_investigate(
         batch,
         _healthy_background(background_dir),
         output_dir,
+        model_artifact_sha256=hashlib.sha256(model_path.read_bytes()).hexdigest(),
     )
     result = {
         **report["executive_summary"],

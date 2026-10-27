@@ -47,9 +47,9 @@ def plot_anomaly_timeline(
     axes[0].scatter(
         flagged["window_end_h"], flagged["anomaly_score"], color="#b3261e", s=12, label="Flagged"
     )
-    axes[0].set_ylabel("Anomaly score")
+    axes[0].set_ylabel("Unusual-behavior score")
     axes[0].legend(loc="upper right")
-    axes[0].set_title(f"MaverickX anomaly timeline — {batch.metadata.batch_id}")
+    axes[0].set_title(f"Unusual behavior across the batch — {batch.metadata.batch_id}")
 
     for axis, (sensor, label) in zip(axes[1:], sensors):
         axis.plot(

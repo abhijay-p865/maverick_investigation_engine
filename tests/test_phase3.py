@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from jsonschema import FormatChecker, validate as validate_json_schema
 
 from maverickx.data import BatchData, BatchMetadata, DataQualityReport
 from maverickx.features import FeatureConfig
@@ -55,7 +56,7 @@ def test_complete_report_uses_exact_score_and_writes_both_formats(tmp_path: Path
         algorithm="one_class_svm",
         feature_config=FeatureConfig(window_samples=3),
         maximum_svm_training_windows=100,
-    ).with_threshold(float("-inf"), 0.9845)
+    ).with_threshold(-1e300, 0.9845)
     detector.model_version = "maverickx_phase2_threshold_v2_1"
     report = analyze_batch_phase3(
         detector,
@@ -69,10 +70,21 @@ def test_complete_report_uses_exact_score_and_writes_both_formats(tmp_path: Path
     assert report["shap_consistency"]["maximum_absolute_additivity_residual"] < 1e-6
     assert report["model"]["score_quantity"] == "negative One-Class SVM score_samples"
     assert report["ranked_investigations"][0]["category"] == "cooling_heating_system"
+    top_feature = report["anomaly_events"][0]["explanation"]["top_features"][0]
+    assert "_" not in top_feature["display_name"]
+    assert top_feature["plain_language_meaning"]
+    assert "0-to-1" in report["ranked_investigations"][0]["priority_score_meaning"]
     assert Path(report["files"]["analysis_json"]).exists()
     assert Path(report["files"]["markdown_report"]).exists()
     saved = json.loads(Path(report["files"]["analysis_json"]).read_text())
     assert saved["label_use_statement"].startswith("Fault labels")
+    schema_path = Path(__file__).parents[1] / "schemas/investigation-report-v1.schema.json"
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    validate_json_schema(saved, schema, format_checker=FormatChecker())
+    assert saved["analysis_metadata"]["report_schema_version"] == "1.0.0"
+    assert saved["analysis_metadata"]["input_sha256"] is None
+    assert saved["analysis_metadata"]["model_artifact_sha256"] is None
+    assert saved["analysis_metadata"]["analysis_timestamp_utc"].endswith("Z")
 
 
 class StableProcessReference:

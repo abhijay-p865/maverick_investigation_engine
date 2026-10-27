@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 
 import numpy as np
@@ -62,6 +63,13 @@ def test_non_increasing_timestamp_is_rejected() -> None:
         validate_internal_batch(frame)
 
 
+def test_infinite_required_measurement_is_rejected() -> None:
+    frame = valid_internal_frame()
+    frame.loc[2, "pressure_bar"] = np.inf
+    with pytest.raises(DataValidationError, match="non-finite"):
+        validate_internal_batch(frame)
+
+
 def test_indpensim_csv_adapter_preserves_fault_metadata(tmp_path) -> None:
     source = pd.DataFrame(
         {
@@ -77,6 +85,7 @@ def test_indpensim_csv_adapter_preserves_fault_metadata(tmp_path) -> None:
     path = tmp_path / "Batch_12_fault_1.csv"
     source.to_csv(path, index=False)
     batch = load_indpensim_csv(path)
+    assert batch.metadata.input_sha256 == hashlib.sha256(path.read_bytes()).hexdigest()
     assert batch.metadata.batch_id == "indpensim_012"
     assert batch.metadata.fault_label == "aeration_fault"
     assert batch.metadata.fault_onset_h is None  # This short fixture ends before 20 h.

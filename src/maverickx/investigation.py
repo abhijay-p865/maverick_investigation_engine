@@ -8,6 +8,8 @@ from typing import Any, Iterable
 import numpy as np
 import pandas as pd
 
+from .presentation import measurement_display_name
+
 from .data import BatchData
 
 
@@ -230,11 +232,11 @@ def rank_event_investigations(
             if process_support[name] >= 0.2
         ][:3]
         observations = [
-            f"{name} supplied {sensor_support[name]:.0%} of positive SHAP sensor support."
+            f"{measurement_display_name(name)} contributed {sensor_support[name]:.0%} of the positive sensor evidence used to rank this check."
             for name in supporting_sensors
         ]
         observations.extend(
-            f"{item['channel']} had a 90th-percentile deviation of {item['p90_absolute_robust_deviation']:.1f} healthy-reference scale units during the event."
+            f"{measurement_display_name(item['channel'])} differed from healthy batches by {item['p90_absolute_robust_deviation']:.1f} reference-scale units during the event."
             for item in supporting_context
         )
         uncertainty = (
@@ -246,10 +248,10 @@ def rank_event_investigations(
                 "category": category,
                 "investigation_title": title,
                 "priority_score": float(round(score, 6)),
-                "priority_score_meaning": "relative combination of SHAP sensor support and healthy-reference process-pattern agreement",
+                "priority_score_meaning": "A relative 0-to-1 evidence score combining model contribution and agreement with unusual process patterns. Higher means stronger support for checking this area first; it is not a probability or diagnosis.",
                 "supporting_sensor_features": supporting_sensors,
                 "confirmed_observations": observations,
-                "possible_explanation": f"The observed pattern could be consistent with an issue in {title.lower()}, but does not establish that cause.",
+                "possible_explanation": f"The observed pattern could be consistent with an issue involving {title}, but does not establish that cause.",
                 "relevant_process_log_events": [],
                 "suggested_operator_verification": verification,
                 "uncertainty": uncertainty,

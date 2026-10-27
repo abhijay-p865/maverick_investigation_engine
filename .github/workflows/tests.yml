@@ -14,4 +14,14 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install -r requirements-dev.txt
+      - name: Verify packaged inference assets
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          root = Path.cwd() / "runtime_assets"
+          assert (root / "model/selected_detector_v2_1.joblib").is_file()
+          assert (root / "demo/Batch_40_fault_8.csv").is_file()
+          assert len(list((root / "healthy_background").glob("Batch_*_fault_0.csv"))) >= 5
+          PY
       - run: python -m pytest -q

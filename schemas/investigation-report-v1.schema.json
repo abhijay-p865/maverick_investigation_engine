@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:maverickx:investigation-report:v1",
+  "title": "MaverickX Investigation Report v1",
+  "description": "Versioned JSON contract for MaverickX Phase 3 investigation reports.",
+  "type": "object",
+  "required": [
+    "analysis_metadata", "report_type", "batch_metadata", "data_quality", "model",
+    "label_use_statement", "executive_summary", "anomaly_events", "ranked_investigations",
+    "timeline", "shap_consistency", "runtime_seconds", "limitations", "files"
+  ],
+  "properties": {
+    "analysis_metadata": {
+      "type": "object",
+      "required": ["report_schema_version", "analysis_timestamp_utc", "input_sha256", "model_artifact_sha256"],
+      "properties": {
+        "report_schema_version": {"const": "1.0.0"},
+        "analysis_timestamp_utc": {"type": "string", "format": "date-time"},
+        "input_sha256": {"oneOf": [{"type": "string", "pattern": "^[a-f0-9]{64}$"}, {"type": "null"}]},
+        "model_artifact_sha256": {"oneOf": [{"type": "string", "pattern": "^[a-f0-9]{64}$"}, {"type": "null"}]}
+      },
+      "additionalProperties": true
+    },
+    "report_type": {"const": "MaverickX post-batch investigation prototype"},
+    "batch_metadata": {"type": "object", "required": ["batch_id", "units", "input_sha256"], "additionalProperties": true},
+    "data_quality": {"type": "object", "required": ["row_count", "missing_counts", "imputed_counts", "warnings"], "additionalProperties": true},
+    "model": {
+      "type": "object",
+      "required": ["model_version", "model_type", "score_quantity", "alert_threshold", "threshold_quantile", "feature_config", "feature_names"],
+      "properties": {
+        "model_version": {"type": "string", "minLength": 1},
+        "model_type": {"const": "One-Class SVM"},
+        "alert_threshold": {"type": "number"},
+        "threshold_quantile": {"type": "number"},
+        "feature_config": {"type": "object"},
+        "feature_names": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "label_use_statement": {"type": "string", "minLength": 1},
+    "executive_summary": {
+      "type": "object",
+      "required": ["plain_language_summary", "eligible_window_count", "flagged_window_count", "flagged_window_fraction", "anomaly_event_count", "maximum_anomaly_score"],
+      "properties": {
+        "plain_language_summary": {"type": "string"},
+        "eligible_window_count": {"type": "integer", "minimum": 0},
+        "flagged_window_count": {"type": "integer", "minimum": 0},
+        "flagged_window_fraction": {"type": "number", "minimum": 0, "maximum": 1},
+        "anomaly_event_count": {"type": "integer", "minimum": 0},
+        "maximum_anomaly_score": {"type": "number"}
+      },
+      "additionalProperties": true
+    },
+    "anomaly_events": {"type": "array", "items": {"type": "object", "required": ["event_id", "start_h", "end_h", "duration_h", "ranked_investigations"], "additionalProperties": true}},
+    "ranked_investigations": {"type": "array", "items": {"type": "object", "required": ["rank", "investigation_title", "priority_score"], "additionalProperties": true}},
+    "timeline": {"type": "array", "items": {"type": "object", "required": ["batch_id", "window_start_h", "window_end_h", "anomaly_score", "alert_threshold", "is_flagged", "model_version"], "properties": {"batch_id": {"type": "string"}, "window_start_h": {"type": "number"}, "window_end_h": {"type": "number"}, "anomaly_score": {"type": "number"}, "alert_threshold": {"type": "number"}, "is_flagged": {"type": "boolean"}, "model_version": {"type": "string"}}, "additionalProperties": true}},
+    "shap_consistency": {"type": "object", "required": ["all_additivity_checks_passed", "maximum_absolute_additivity_residual"], "additionalProperties": true},
+    "runtime_seconds": {"type": "number", "minimum": 0},
+    "limitations": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "files": {"type": "object", "required": ["analysis_json", "markdown_report", "timeline_csv", "timeline_chart_png", "shap_chart_png"], "additionalProperties": {"type": "string"}}
+  },
+  "additionalProperties": true
+}

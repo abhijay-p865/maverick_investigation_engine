@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import io
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -42,6 +44,7 @@ class BatchMetadata:
     fault_onset_h: float | None
     fault_intervals_h: list[tuple[float, float]]
     units: dict[str, str]
+    input_sha256: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -143,6 +146,11 @@ def _validate_and_fill(
                 f"Column {column!r} contains {newly_invalid} non-numeric values."
             )
         clean[column] = converted
+        finite_values = converted.dropna().to_numpy(dtype=float)
+        if not np.isfinite(finite_values).all():
+            raise DataValidationError(
+                f"Column {column!r} contains a non-finite value. Replace Infinity with a finite value; leave missing readings blank."
+            )
 
     if clean["elapsed_time_h"].isna().any():
         raise DataValidationError("Elapsed time contains missing values.")
@@ -214,6 +222,7 @@ def _batch_from_source_frame(
     fault_label: str | None,
     fault_active: pd.Series | None,
     fault_intervals: list[tuple[float, float]] | None = None,
+    input_sha256: str | None = None,
 ) -> BatchData:
     available = {key: value for key, value in INDPENSIM_COLUMN_MAP.items() if key in source}
     frame = source[list(available)].rename(columns=available).copy()
@@ -238,6 +247,7 @@ def _batch_from_source_frame(
         fault_onset_h=onset,
         fault_intervals_h=intervals,
         units={key: UNITS[key] for key in frame.columns if key in UNITS},
+        input_sha256=input_sha256,
     )
     return BatchData(frame.reset_index(drop=True), metadata, quality)
 
@@ -298,7 +308,8 @@ def load_indpensim_csv(path: str | Path, *, batch_id_prefix: str = "indpensim") 
     """Load one CSV written by the IndPenSim simulator repository."""
 
     path = Path(path)
-    source = pd.read_csv(path)
+    input_bytes = path.read_bytes()
+    source = pd.read_csv(io.BytesIO(input_bytes))
     source_batch_number: int | None = None
     if "Batch_ref" in source and source["Batch_ref"].nunique(dropna=True) == 1:
         source_batch_number = int(source["Batch_ref"].dropna().iloc[0])
@@ -341,6 +352,7 @@ def load_indpensim_csv(path: str | Path, *, batch_id_prefix: str = "indpensim") 
         fault_label=None if fault_code is None else FAULT_LABEL_BY_CODE[fault_code],
         fault_active=None,
         fault_intervals=clipped_intervals,
+        input_sha256=hashlib.sha256(input_bytes).hexdigest(),
     )
 
 

@@ -35,3 +35,5 @@ Each eligible rolling window contains:
 
 The JSON output contains batch metadata, data-quality information, model identity, all timeline records, grouped anomaly events, and explicit limitations. It may contain a separate `evaluation_ground_truth` section when known simulator labels are available; that section is not needed for ordinary inference.
 
+Phase 3 investigation reports follow [`schemas/investigation-report-v1.schema.json`](../schemas/investigation-report-v1.schema.json). The `analysis_metadata` block records the schema version, UTC analysis time, and SHA-256 values for the source CSV and model artifact when their exact file bytes are available. Direct in-memory Python callers may have null hashes. The model block retains model version, threshold, and feature configuration. A source-control hash is not included unless it can be verified.
+

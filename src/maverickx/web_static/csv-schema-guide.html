@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CSV schema guide — Anomalyze</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <main class="section-shell">
+    <p class="eyebrow">CSV INPUT GUIDE</p>
+    <h1>Required columns and units</h1>
+    <p>Upload a completed IndPenSim-format batch with one row per measurement time. The loader recognizes the source headings below and maps them to MaverickX's internal schema.</p>
+    <table>
+      <thead><tr><th>IndPenSim heading</th><th>Meaning</th><th>Unit</th></tr></thead>
+      <tbody>
+        <tr><td><code>Time (h)</code></td><td>Elapsed time since batch start</td><td>h</td></tr>
+        <tr><td><code>Dissolved oxygen concentration(DO2:mg/L)</code></td><td>Dissolved oxygen</td><td>mg/L</td></tr>
+        <tr><td><code>pH(pH:pH)</code></td><td>pH</td><td>pH</td></tr>
+        <tr><td><code>Temperature(T:K)</code></td><td>Temperature</td><td>K</td></tr>
+        <tr><td><code>Air head pressure(pressure:bar)</code></td><td>Vessel head pressure</td><td>bar</td></tr>
+      </tbody>
+    </table>
+    <h2>Data checks</h2>
+    <ul>
+      <li>Time must be numeric, unique, and strictly increasing.</li>
+      <li>Required measurements must be numeric. At most two consecutive missing samples inside a series may be linearly interpolated; leading, trailing, or longer gaps are rejected.</li>
+      <li>Irregular sampling intervals are reported as a data-quality warning.</li>
+      <li>Optional process channels are preserved when recognized. Fault labels are metadata and are not model inputs.</li>
+    </ul>
+    <p>Anomaly alerts mean unusual behavior relative to healthy simulator history. They do not establish contamination or a physical cause.</p>
+    <p><a href="/#analyze">Return to upload</a></p>
+  </main>
+</body>
+</html>

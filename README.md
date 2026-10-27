@@ -40,7 +40,7 @@ The normal `python` command is not installed, so this project uses Codex's bundl
 
 ### Public, no-install version
 
-Open **[maverick-investigation-engine.vercel.app](https://maverick-investigation-engine.vercel.app/)**.
+Open **[maverickx-anomalyze.vercel.app](https://maverickx-anomalyze.vercel.app/)**.
 No account, download, or command line is required. Select **Try the example
 batch** for a one-click demonstration, or upload an IndPenSim-format CSV up to
 4 MB. The result appears in the same page and its JSON, Markdown, and timeline
