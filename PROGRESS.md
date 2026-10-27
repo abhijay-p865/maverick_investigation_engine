@@ -514,12 +514,16 @@ Verified:
 - Focused Phase 3 and website tests passed: 13 passed with 4 third-party deprecation warnings.
 - A separate real-pipeline regression check passed after removing the remaining visible v2.1 summary wording.
 - Local browser verification loaded the hero asset, completed the example analysis through the API, rendered the simplified report language, and displayed the revised four-item limits section.
+- The complete automated suite passed: 38 passed with the same 4 third-party deprecation warnings.
+- The reviewed source was pushed to `main`, the Vercel production deployment reached `READY`, and `https://maverickx-anomalyze.vercel.app/` served the new landing page.
+- Production browser verification ran the example analysis and displayed the simplified report, plain-language priority-score definition, and four scientific limits without visible model-version wording.
 
 Issues:
 
-- The new domain is attached to the Vercel project, but it will continue to serve the prior production build until the reviewed source changes are deployed.
+- No blocking issues. The test suite still reports four third-party deprecation warnings from SHAP/Matplotlib and FastAPI/Starlette.
+- The previous Vercel address remains attached as an alias, while `maverickx-anomalyze.vercel.app` is the primary requested address.
 
 Next:
 
-- Run the complete test suite, publish the reviewed source, and verify the new production domain end to end.
+- Review the live site with stakeholders and collect feedback using real, appropriately governed batch CSVs. Continue to describe the tool as an investigation aid evaluated on simulated process and sensor faults.
 
